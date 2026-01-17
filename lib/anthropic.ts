@@ -1,8 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface InterpretationResult {
   interpretedMessage: string;
@@ -14,13 +12,9 @@ export async function interpretMessage(
   originalMessage: string,
   senderName: string = "Your partner"
 ): Promise<InterpretationResult> {
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: `You are a compassionate couples therapist helping partners communicate better.
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `You are a compassionate couples therapist helping partners communicate better.
 
 ${senderName} sent this message to their partner:
 "${originalMessage}"
@@ -32,27 +26,25 @@ Your task is to:
 
 3. Provide a brief tip for the receiver on how to respond with empathy.
 
-Respond in this exact JSON format:
+Respond in this exact JSON format only, no other text:
 {
   "interpretedMessage": "The softer version of the message",
   "emotionSummary": "2-3 sentences about what emotions are present",
   "communicationTip": "One brief tip for the receiver"
-}
-
-Only respond with the JSON, no other text.`
-      }
-    ]
-  });
-
-  const content = response.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Unexpected response type');
-  }
+}`;
 
   try {
-    return JSON.parse(content.text) as InterpretationResult;
-  } catch {
-    // Fallback if JSON parsing fails
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Clean up the response - remove markdown code blocks if present
+    const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    return JSON.parse(cleanedText) as InterpretationResult;
+  } catch (error) {
+    console.error('Gemini API error:', error);
+    // Fallback if parsing fails
     return {
       interpretedMessage: originalMessage,
       emotionSummary: "Unable to analyze emotions at this time.",
