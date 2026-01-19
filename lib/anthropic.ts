@@ -55,10 +55,11 @@ Respond in this exact JSON format only, no other text:
 
     return JSON.parse(cleanedText) as InterpretationResult;
   } catch (error) {
-    console.error('Gemini API error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Gemini API error:', errorMessage);
     return {
       interpretedMessage: originalMessage,
-      emotionSummary: "Unable to analyze emotions at this time.",
+      emotionSummary: `Error: ${errorMessage}`,
       communicationTip: "Listen with an open heart."
     };
   }
