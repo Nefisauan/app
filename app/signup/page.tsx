@@ -22,6 +22,8 @@ function SignUpForm() {
     setLoading(true);
 
     try {
+      console.log("Attempting signup with:", { email, name });
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -31,6 +33,8 @@ function SignUpForm() {
           },
         },
       });
+
+      console.log("Signup response:", { data, error: signUpError });
 
       if (signUpError) {
         setError(signUpError.message);
@@ -44,8 +48,9 @@ function SignUpForm() {
           router.push("/dashboard");
         }
       }
-    } catch {
-      setError("An unexpected error occurred");
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
