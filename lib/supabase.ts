@@ -1,34 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-let supabaseInstance: SupabaseClient | null = null;
+// Hardcoded for now to debug - will use env vars later
+const supabaseUrl = 'https://svruinryzyblnlhngggj.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2cnVpbnJ5enlibG5saG5nZ2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MTg3ODEsImV4cCI6MjA4NDA5NDc4MX0.ATyEiAkiU9A7WmE0D1Zk9MBgtXULzsdmYw880EHyF2k';
 
-export function getSupabase(): SupabaseClient {
-  if (supabaseInstance) {
-    return supabaseInstance;
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
-  }
-
-  supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-  return supabaseInstance;
-}
-
-// For backwards compatibility - creates client lazily
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    const client = getSupabase();
-    const value = (client as unknown as Record<string | symbol, unknown>)[prop];
-    if (typeof value === 'function') {
-      return value.bind(client);
-    }
-    return value;
-  }
-});
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type Message = {
   id: string;
