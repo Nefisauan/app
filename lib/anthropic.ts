@@ -1,7 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export interface InterpretationResult {
   interpretedMessage: string;
   emotionSummary: string;
@@ -12,6 +10,18 @@ export async function interpretMessage(
   originalMessage: string,
   senderName: string = "Your partner"
 ): Promise<InterpretationResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY is not set');
+    return {
+      interpretedMessage: originalMessage,
+      emotionSummary: "AI service not configured. Please add GEMINI_API_KEY.",
+      communicationTip: "Listen with an open heart."
+    };
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `You are a compassionate couples therapist helping partners communicate better.
@@ -38,13 +48,14 @@ Respond in this exact JSON format only, no other text:
     const response = await result.response;
     const text = response.text();
 
+    console.log('Gemini raw response:', text);
+
     // Clean up the response - remove markdown code blocks if present
     const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     return JSON.parse(cleanedText) as InterpretationResult;
   } catch (error) {
     console.error('Gemini API error:', error);
-    // Fallback if parsing fails
     return {
       interpretedMessage: originalMessage,
       emotionSummary: "Unable to analyze emotions at this time.",
